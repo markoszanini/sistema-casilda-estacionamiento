@@ -69,6 +69,61 @@ class ParkingSessionViewSet(viewsets.ModelViewSet):
             'saldo_actual': billetera.saldo_actual
         }, status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'])
+    def finalizar(self, request):
+        """
+        Finaliza un estacionamiento activo, calcula el costo por minuto y lo descuenta.
+        """
+        sesion_id = request.data.get('sesion_id')
+        
+        if not sesion_id:
+            return Response({'error': 'Falta el sesion_id.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            sesion = ParkingSession.objects.get(id=sesion_id, estado='ACTIVO')
+        except ParkingSession.DoesNotExist:
+            return Response({'error': 'No se encontró una sesión activa con ese ID.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Calcular tiempo transcurrido
+        from django.utils import timezone
+        import math
+        from decimal import Decimal
+        
+        sesion.fin = timezone.now()
+        minutos = math.ceil((sesion.fin - sesion.inicio).total_seconds() / 60.0)
+        
+        if minutos < 1:
+            minutos = 1  # Cobramos al menos 1 minuto
+            
+        # Tarifa: 100 pesos la hora
+        TARIFA_POR_MINUTO = Decimal('100.0') / Decimal('60.0')
+        costo_total = round(Decimal(minutos) * TARIFA_POR_MINUTO, 2)
+        
+        # Descontar de la billetera
+        billetera = UserWallet.objects.get(user_id=sesion.user_id)
+        billetera.saldo_actual -= costo_total
+        billetera.save()
+        
+        # Registrar la transaccion contable
+        Transaction.objects.create(
+            user_id=sesion.user_id,
+            monto=costo_total,
+            tipo='DEBITO',
+            metodo_pago='Saldo Billetera'
+        )
+        
+        # Actualizar sesion
+        sesion.estado = 'FINALIZADO'
+        sesion.costo_total = costo_total
+        sesion.save()
+        
+        return Response({
+            'mensaje': 'Estacionamiento finalizado.',
+            'minutos_transcurridos': minutos,
+            'costo_cobrado': float(costo_total),
+            'saldo_restante': float(billetera.saldo_actual)
+        }, status=status.HTTP_200_OK)
+
 class LPRScanViewSet(viewsets.ModelViewSet):
     queryset = LPRScan.objects.all()
     serializer_class = LPRScanSerializer
