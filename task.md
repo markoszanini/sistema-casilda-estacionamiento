@@ -19,7 +19,7 @@ Este documento es un registro vivo del progreso del equipo. Marca las tareas con
     - `[x]` Inicializar proyecto en Python (Django o FastAPI).
     - `[x]` Conectar proyecto con la Base de Datos diseñada por el Ingeniero.
     - `[x]` Crear estructura de modelos (Modelos: Usuario, Vehículo, Estacionamiento).
-    - `[ ]` Crear endpoints básicos (Hola Mundo y Autenticación).
+    - `[x]` Crear endpoints básicos (Hola Mundo y Autenticación).
 - `[ ]` **Desarrollador 2 (Frontend - JS)**
     - `[ ]` Inicializar proyecto de App Móvil (ej. React Native / Expo).
     - `[ ]` Inicializar proyecto de Dashboard Web (ej. Vite + React).
