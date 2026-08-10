@@ -16,7 +16,13 @@ class Command(BaseCommand):
         UserFavoriteVehicle.objects.update_or_create(
             user_id=1,
             patente='AB123CD',
-            defaults={'alias': 'Auto principal'},
+            defaults={
+                'alias': 'Auto principal',
+                'marca': 'Toyota',
+                'modelo': 'Corolla',
+                'anio': 2018,
+                'color': 'Blanco',
+            },
         )
 
         # Infracción de ejemplo (patente sin sesión activa)

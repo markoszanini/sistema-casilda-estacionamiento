@@ -22,13 +22,21 @@ import { AppHeader } from '../components/AppHeader';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 
+const emptyForm = {
+  patente: '',
+  alias: '',
+  marca: '',
+  modelo: '',
+  anio: '',
+  color: '',
+};
+
 export function VehiclesScreen() {
   const { userId } = useAuth();
   const [vehicles, setVehicles] = useState<FavoriteVehicle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [patente, setPatente] = useState('');
-  const [alias, setAlias] = useState('');
+  const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,16 +62,14 @@ export function VehiclesScreen() {
   );
 
   const resetForm = () => {
-    setPatente('');
-    setAlias('');
+    setForm(emptyForm);
     setEditingId(null);
     setShowForm(false);
   };
 
   const openCreate = () => {
     setEditingId(null);
-    setPatente('');
-    setAlias('');
+    setForm(emptyForm);
     setShowForm(true);
     setOkMessage(null);
     setError(null);
@@ -71,8 +77,14 @@ export function VehiclesScreen() {
 
   const openEdit = (vehicle: FavoriteVehicle) => {
     setEditingId(vehicle.id);
-    setPatente(vehicle.patente);
-    setAlias(vehicle.alias ?? '');
+    setForm({
+      patente: vehicle.patente,
+      alias: vehicle.alias ?? '',
+      marca: vehicle.marca ?? '',
+      modelo: vehicle.modelo ?? '',
+      anio: vehicle.anio ? String(vehicle.anio) : '',
+      color: vehicle.color ?? '',
+    });
     setShowForm(true);
     setOkMessage(null);
     setError(null);
@@ -80,22 +92,35 @@ export function VehiclesScreen() {
 
   const onSave = async () => {
     if (!userId) return;
-    if (!patente.trim()) {
+    if (!form.patente.trim()) {
       setError('La patente es obligatoria');
       return;
     }
+
+    const anioNumber = form.anio.trim() ? Number(form.anio) : null;
+    if (form.anio.trim() && (!anioNumber || anioNumber < 1950 || anioNumber > 2100)) {
+      setError('Año inválido');
+      return;
+    }
+
+    const payload = {
+      patente: form.patente.trim().toUpperCase(),
+      alias: form.alias.trim() || null,
+      marca: form.marca.trim() || null,
+      modelo: form.modelo.trim() || null,
+      anio: anioNumber,
+      color: form.color.trim() || null,
+    };
+
     setSaving(true);
     setError(null);
     setOkMessage(null);
     try {
       if (editingId) {
-        await updateVehicle(editingId, {
-          patente: patente.trim().toUpperCase(),
-          alias: alias.trim() || null,
-        });
+        await updateVehicle(editingId, payload);
         setOkMessage('Vehículo actualizado');
       } else {
-        await createVehicle(userId, patente, alias);
+        await createVehicle(userId, payload);
         setOkMessage('Vehículo registrado');
       }
       resetForm();
@@ -139,6 +164,10 @@ export function VehiclesScreen() {
     ]);
   };
 
+  const setField = (key: keyof typeof emptyForm, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   return (
     <View style={styles.container}>
       <AppHeader title="Mis vehículos" subtitle="Registrar y gestionar patentes" />
@@ -157,15 +186,44 @@ export function VehiclesScreen() {
               placeholder="Patente (ej: AB123CD)"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="characters"
-              value={patente}
-              onChangeText={setPatente}
+              value={form.patente}
+              onChangeText={(v) => setField('patente', v)}
             />
             <TextInput
               style={styles.input}
               placeholder="Alias (ej: Auto principal)"
               placeholderTextColor={colors.textMuted}
-              value={alias}
-              onChangeText={setAlias}
+              value={form.alias}
+              onChangeText={(v) => setField('alias', v)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Marca (ej: Toyota)"
+              placeholderTextColor={colors.textMuted}
+              value={form.marca}
+              onChangeText={(v) => setField('marca', v)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Modelo (ej: Corolla)"
+              placeholderTextColor={colors.textMuted}
+              value={form.modelo}
+              onChangeText={(v) => setField('modelo', v)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Año (ej: 2018)"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              value={form.anio}
+              onChangeText={(v) => setField('anio', v.replace(/[^0-9]/g, ''))}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Color (ej: Blanco)"
+              placeholderTextColor={colors.textMuted}
+              value={form.color}
+              onChangeText={(v) => setField('color', v)}
             />
             <View style={styles.formActions}>
               <Pressable style={styles.secondaryBtn} onPress={resetForm}>
@@ -203,6 +261,11 @@ export function VehiclesScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.plate}>{vehicle.patente}</Text>
               <Text style={styles.label}>{vehicle.alias || 'Sin alias'}</Text>
+              <Text style={styles.meta}>
+                {[vehicle.marca, vehicle.modelo, vehicle.anio, vehicle.color]
+                  .filter(Boolean)
+                  .join(' · ') || 'Sin datos del vehículo'}
+              </Text>
             </View>
             <Pressable style={styles.smallBtn} onPress={() => openEdit(vehicle)}>
               <Text style={styles.smallBtnText}>Editar</Text>
@@ -314,6 +377,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
     fontSize: 14,
+  },
+  meta: {
+    color: colors.text,
+    marginTop: 4,
+    fontSize: 12,
   },
   smallBtn: {
     borderWidth: 1,

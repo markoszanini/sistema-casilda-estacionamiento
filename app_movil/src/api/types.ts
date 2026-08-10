@@ -9,6 +9,19 @@ export type FavoriteVehicle = {
   user_id: number;
   patente: string;
   alias: string | null;
+  marca: string | null;
+  modelo: string | null;
+  anio: number | null;
+  color: string | null;
+};
+
+export type VehiclePayload = {
+  patente: string;
+  alias?: string | null;
+  marca?: string | null;
+  modelo?: string | null;
+  anio?: number | null;
+  color?: string | null;
 };
 
 export type ParkingSession = {

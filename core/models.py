@@ -19,6 +19,10 @@ class UserFavoriteVehicle(models.Model):
     user_id = models.IntegerField(help_text="ID del usuario en Casilda Conecta")
     patente = models.CharField(max_length=10)
     alias = models.CharField(max_length=50, blank=True, null=True, help_text="Ej: Mi Auto")
+    marca = models.CharField(max_length=50, blank=True, null=True)
+    modelo = models.CharField(max_length=50, blank=True, null=True)
+    anio = models.PositiveIntegerField(blank=True, null=True)
+    color = models.CharField(max_length=30, blank=True, null=True)
 
     def __str__(self):
         return f"{self.patente} ({self.alias})"

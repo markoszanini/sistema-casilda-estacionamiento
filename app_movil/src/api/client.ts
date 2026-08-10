@@ -6,6 +6,7 @@ import type {
   ParkingSession,
   RecargarResponse,
   UserWallet,
+  VehiclePayload,
 } from './types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -85,28 +86,37 @@ export async function getVehicles(userId: number): Promise<FavoriteVehicle[]> {
 
 export async function createVehicle(
   userId: number,
-  patente: string,
-  alias?: string,
+  data: VehiclePayload,
 ): Promise<FavoriteVehicle> {
   return request<FavoriteVehicle>('/api/vehicles/', {
     method: 'POST',
     body: JSON.stringify({
       user_id: userId,
-      patente: patente.trim().toUpperCase(),
-      alias: alias?.trim() || null,
+      patente: data.patente.trim().toUpperCase(),
+      alias: data.alias?.trim() || null,
+      marca: data.marca?.trim() || null,
+      modelo: data.modelo?.trim() || null,
+      anio: data.anio ?? null,
+      color: data.color?.trim() || null,
     }),
   });
 }
 
 export async function updateVehicle(
   id: number,
-  data: Partial<Pick<FavoriteVehicle, 'patente' | 'alias'>>,
+  data: Partial<VehiclePayload>,
 ): Promise<FavoriteVehicle> {
   return request<FavoriteVehicle>(`/api/vehicles/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify({
-      ...(data.patente ? { patente: data.patente.trim().toUpperCase() } : {}),
+      ...(data.patente
+        ? { patente: data.patente.trim().toUpperCase() }
+        : {}),
       ...(data.alias !== undefined ? { alias: data.alias } : {}),
+      ...(data.marca !== undefined ? { marca: data.marca } : {}),
+      ...(data.modelo !== undefined ? { modelo: data.modelo } : {}),
+      ...(data.anio !== undefined ? { anio: data.anio } : {}),
+      ...(data.color !== undefined ? { color: data.color } : {}),
     }),
   });
 }
