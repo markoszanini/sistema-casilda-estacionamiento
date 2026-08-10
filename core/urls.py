@@ -6,7 +6,8 @@ from .views import (
     TransactionViewSet,
     ParkingSessionViewSet,
     LPRScanViewSet,
-    InfractionViewSet
+    InfractionViewSet,
+    reports,
 )
 
 router = DefaultRouter()
@@ -18,5 +19,6 @@ router.register(r'scans', LPRScanViewSet)
 router.register(r'infractions', InfractionViewSet)
 
 urlpatterns = [
+    path('api/reports/', reports, name='reports'),
     path('api/', include(router.urls)),
 ]

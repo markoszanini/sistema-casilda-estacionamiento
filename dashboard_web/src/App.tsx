@@ -2,15 +2,26 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchActiveSessions,
   fetchInfractions,
+  fetchReports,
   fetchScans,
   registrarInfraccion,
   type Infraction,
   type LPRScan,
   type ParkingSession,
+  type ReportPeriod,
+  type ReportsResponse,
 } from './api'
 import './App.css'
 
 const POLL_MS = 4000
+
+const REPORT_PERIODS: Array<{ value: ReportPeriod; label: string }> = [
+  { value: 'day', label: 'Día' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'year', label: 'Año' },
+  { value: '', label: 'Histórico' },
+]
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('es-AR', {
@@ -38,6 +49,27 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('day')
+  const [report, setReport] = useState<ReportsResponse | null>(null)
+  const [reportLoading, setReportLoading] = useState(true)
+  const [reportError, setReportError] = useState<string | null>(null)
+
+  const loadReports = useCallback(async (period: ReportPeriod) => {
+    setReportLoading(true)
+    setReportError(null)
+    try {
+      setReport(await fetchReports(period))
+    } catch (err) {
+      setReport(null)
+      setReportError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron cargar los reportes',
+      )
+    } finally {
+      setReportLoading(false)
+    }
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -69,6 +101,10 @@ export default function App() {
     }, POLL_MS)
     return () => window.clearInterval(id)
   }, [load])
+
+  useEffect(() => {
+    void loadReports(reportPeriod)
+  }, [reportPeriod, loadReports])
 
   const filteredSessions = useMemo(() => {
     const q = query.trim().toUpperCase()
@@ -166,6 +202,51 @@ export default function App() {
           <span>Escaneos LPR</span>
           <strong>{scans.length}</strong>
         </article>
+      </section>
+
+      <section className="reports-panel">
+        <div className="reports-header">
+          <div>
+            <h2>Reportes estadísticos</h2>
+            <p>Indicadores de recaudación e infracciones por período</p>
+          </div>
+          <div className="period-selector" role="group" aria-label="Período del reporte">
+            {REPORT_PERIODS.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className={`period-btn ${reportPeriod === item.value ? 'active' : ''}`}
+                onClick={() => setReportPeriod(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {reportError ? <p className="banner-error">{reportError}</p> : null}
+        {reportLoading ? <p className="muted">Cargando reportes…</p> : null}
+
+        {!reportLoading && report ? (
+          <div className="report-metrics">
+            <article className="report-card">
+              <span>Vehículos estacionados</span>
+              <strong>{report.vehiculos_estacionados}</strong>
+            </article>
+            <article className="report-card">
+              <span>Monto recaudado</span>
+              <strong>{formatMoney(report.monto_recaudado)}</strong>
+            </article>
+            <article className="report-card danger">
+              <span>Cantidad de infracciones</span>
+              <strong>{report.cantidad_infracciones}</strong>
+            </article>
+            <article className="report-card danger">
+              <span>Monto infracciones</span>
+              <strong>{formatMoney(report.monto_infracciones)}</strong>
+            </article>
+          </div>
+        ) : null}
       </section>
 
       {error ? <p className="banner-error">{error}</p> : null}

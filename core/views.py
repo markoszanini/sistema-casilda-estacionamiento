@@ -1,5 +1,10 @@
+from datetime import timedelta
+from decimal import Decimal
+
+from django.db.models import Count, Sum
+from django.utils import timezone
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from .models import UserWallet, UserFavoriteVehicle, Transaction, ParkingSession, LPRScan, Infraction
 from .serializers import (
@@ -10,6 +15,59 @@ from .serializers import (
     LPRScanSerializer,
     InfractionSerializer
 )
+
+
+def _period_start(period: str):
+    now = timezone.now()
+    if period == 'day':
+        return now - timedelta(days=1)
+    if period == 'week':
+        return now - timedelta(days=7)
+    if period == 'month':
+        return now - timedelta(days=30)
+    if period == 'year':
+        return now - timedelta(days=365)
+    return None
+
+
+@api_view(['GET'])
+def reports(request):
+    """
+    Reportes estadísticos para el dashboard municipal.
+    GET /api/reports/?period=day|week|month|year  (vacío = histórico)
+    """
+    period = (request.query_params.get('period') or '').strip().lower()
+    valid = {'', 'day', 'week', 'month', 'year'}
+    if period not in valid:
+        return Response(
+            {'error': 'period inválido. Use day, week, month, year o vacío.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    start = _period_start(period)
+    sessions = ParkingSession.objects.all()
+    infractions = Infraction.objects.all()
+    debit_tx = Transaction.objects.filter(tipo='DEBITO')
+
+    if start is not None:
+        sessions = sessions.filter(inicio__gte=start)
+        infractions = infractions.filter(fecha_emision__gte=start)
+        debit_tx = debit_tx.filter(fecha__gte=start)
+
+    vehiculos = sessions.values('patente').distinct().count()
+    monto_recaudado = debit_tx.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    infracciones_agg = infractions.aggregate(
+        cantidad=Count('id'),
+        monto=Sum('monto_multa'),
+    )
+
+    return Response({
+        'period': period or 'all',
+        'vehiculos_estacionados': vehiculos,
+        'monto_recaudado': float(monto_recaudado),
+        'cantidad_infracciones': infracciones_agg['cantidad'] or 0,
+        'monto_infracciones': float(infracciones_agg['monto'] or 0),
+    })
 
 class UserWalletViewSet(viewsets.ModelViewSet):
     queryset = UserWallet.objects.all()

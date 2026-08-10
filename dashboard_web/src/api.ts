@@ -37,6 +37,16 @@ export type RegistrarInfractionResponse = {
   monto_multa: number
 }
 
+export type ReportPeriod = 'day' | 'week' | 'month' | 'year' | ''
+
+export type ReportsResponse = {
+  period: string
+  vehiculos_estacionados: number
+  monto_recaudado: number
+  cantidad_infracciones: number
+  monto_infracciones: number
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`)
   if (!response.ok) {
@@ -111,4 +121,11 @@ export async function registrarInfraccion(
     latitud: -33.0444,
     longitud: -61.1681,
   })
+}
+
+export async function fetchReports(
+  period: ReportPeriod = '',
+): Promise<ReportsResponse> {
+  const query = period ? `?period=${period}` : ''
+  return getJson<ReportsResponse>(`/api/reports/${query}`)
 }
