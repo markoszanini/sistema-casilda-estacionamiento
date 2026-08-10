@@ -20,8 +20,8 @@ Este documento es un registro vivo del progreso del equipo. Marca las tareas con
     - `[x]` Conectar proyecto con la Base de Datos diseñada por el Ingeniero.
     - `[x]` Crear estructura de modelos (Modelos: Usuario, Vehículo, Estacionamiento).
     - `[x]` Crear endpoints básicos (Hola Mundo y Autenticación).
-- `[ ]` **Desarrollador 2 (Frontend - JS)**
-    - `[ ]` Inicializar proyecto de App Móvil (ej. React Native / Expo).
-    - `[ ]` Inicializar proyecto de Dashboard Web (ej. Vite + React).
-    - `[ ]` Configurar librería de mapas (ej. react-native-maps u OpenStreetMap).
-    - `[ ]` Armar navegación principal de la App (Tabs/Menú).
+- `[x]` **Desarrollador 2 (Frontend - JS)**
+    - `[x]` Inicializar proyecto de App Móvil (ej. React Native / Expo).
+    - `[x]` Inicializar proyecto de Dashboard Web (ej. Vite + React).
+    - `[x]` Configurar librería de mapas (ej. react-native-maps u OpenStreetMap).
+    - `[x]` Armar navegación principal de la App (Tabs/Menú).
