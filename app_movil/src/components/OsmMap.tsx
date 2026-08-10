@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { CASILDA_CENTER } from '../constants/casilda';
+import { CASILDA_CENTER, CASILDA_ZONE_POLYGON } from '../constants/casilda';
 
 type OsmMapProps = {
   userLatitude?: number | null;
@@ -20,6 +20,8 @@ function buildMapHtml(
     typeof userLng === 'number' &&
     !Number.isNaN(userLat) &&
     !Number.isNaN(userLng);
+
+  const polygonJs = JSON.stringify(CASILDA_ZONE_POLYGON);
 
   const userMarkerJs = hasUser
     ? `
@@ -55,6 +57,13 @@ function buildMapHtml(
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
       }).addTo(map);
+      const zone = L.polygon(${polygonJs}, {
+        color: '#0A6847',
+        weight: 2,
+        fillColor: '#0A6847',
+        fillOpacity: 0.22
+      }).addTo(map);
+      zone.bindPopup('Zona de estacionamiento medido');
       L.marker([${centerLat}, ${centerLng}])
         .addTo(map)
         .bindPopup('Casilda — Estacionamiento medido');

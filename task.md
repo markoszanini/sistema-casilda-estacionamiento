@@ -25,3 +25,11 @@ Este documento es un registro vivo del progreso del equipo. Marca las tareas con
     - `[x]` Inicializar proyecto de Dashboard Web (ej. Vite + React).
     - `[x]` Configurar librería de mapas (ej. react-native-maps u OpenStreetMap).
     - `[x]` Armar navegación principal de la App (Tabs/Menú).
+    - `[x]` **Demo — conectar interfaces con la API**
+        - `[x]` App Móvil (Vecino): saldo real + iniciar/detener estacionamiento contra Django.
+        - `[x]` Dashboard (Administrativo): tabla en tiempo real de sesiones activas e infracciones.
+    - `[x]` Login demo + sesión de usuario
+    - `[x]` Cargar saldo (MercadoPago mock)
+    - `[x]` Alta/edición de vehículos
+    - `[x]` Polígono de zona medido en mapa
+    - `[x]` Dashboard: buscador LPR + registrar infracción

@@ -15,6 +15,39 @@ class UserWalletViewSet(viewsets.ModelViewSet):
     queryset = UserWallet.objects.all()
     serializer_class = UserWalletSerializer
 
+    @action(detail=True, methods=['post'])
+    def recargar(self, request, pk=None):
+        """
+        Simula una recarga de saldo (MercadoPago mock para la demo).
+        """
+        from decimal import Decimal, InvalidOperation
+
+        monto_raw = request.data.get('monto')
+        try:
+            monto = Decimal(str(monto_raw))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'Monto inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if monto <= 0:
+            return Response({'error': 'El monto debe ser mayor a 0.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        billetera = self.get_object()
+        billetera.saldo_actual += monto
+        billetera.save()
+
+        Transaction.objects.create(
+            user_id=billetera.user_id,
+            monto=monto,
+            tipo='CREDITO',
+            metodo_pago=request.data.get('metodo_pago', 'MercadoPago (demo)'),
+        )
+
+        return Response({
+            'mensaje': 'Saldo cargado correctamente.',
+            'monto_acreditado': float(monto),
+            'saldo_actual': float(billetera.saldo_actual),
+        }, status=status.HTTP_200_OK)
+
 class UserFavoriteVehicleViewSet(viewsets.ModelViewSet):
     queryset = UserFavoriteVehicle.objects.all()
     serializer_class = UserFavoriteVehicleSerializer
@@ -131,3 +164,47 @@ class LPRScanViewSet(viewsets.ModelViewSet):
 class InfractionViewSet(viewsets.ModelViewSet):
     queryset = Infraction.objects.all()
     serializer_class = InfractionSerializer
+
+    @action(detail=False, methods=['post'])
+    def registrar(self, request):
+        """
+        Registra una infracción a partir de una patente (flujo inspector / LPR).
+        """
+        from decimal import Decimal, InvalidOperation
+
+        patente = (request.data.get('patente') or '').strip().upper()
+        if not patente:
+            return Response({'error': 'La patente es requerida.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            latitud = float(request.data.get('latitud', -33.0444))
+            longitud = float(request.data.get('longitud', -61.1681))
+        except (TypeError, ValueError):
+            return Response({'error': 'Coordenadas inválidas.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            monto = Decimal(str(request.data.get('monto_multa', '1500.00')))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'Monto de multa inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        sesion_activa = ParkingSession.objects.filter(patente=patente, estado='ACTIVO').first()
+        scan = LPRScan.objects.create(
+            patente_leida=patente,
+            latitud=latitud,
+            longitud=longitud,
+            parking_session=sesion_activa,
+        )
+        infraccion = Infraction.objects.create(
+            scan=scan,
+            monto_multa=monto,
+            estado='PENDIENTE',
+        )
+
+        return Response({
+            'mensaje': 'Infracción registrada.',
+            'infraction_id': infraccion.id,
+            'scan_id': scan.id,
+            'patente': patente,
+            'tenia_sesion_activa': bool(sesion_activa),
+            'monto_multa': float(monto),
+        }, status=status.HTTP_201_CREATED)

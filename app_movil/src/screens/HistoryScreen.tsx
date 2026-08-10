@@ -1,28 +1,71 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getSessions } from '../api/client';
+import type { ParkingSession } from '../api/types';
 import { AppHeader } from '../components/AppHeader';
+import { DEMO_USER_ID } from '../config';
 import { colors } from '../theme/colors';
-
-const PLACEHOLDER_SESSIONS = [
-  { id: '1', date: '07/08/2026', duration: '45 min', amount: '$ 250' },
-  { id: '2', date: '05/08/2026', duration: '1 h 10 min', amount: '$ 380' },
-];
+import { formatARS } from '../utils/money';
 
 export function HistoryScreen() {
+  const [sessions, setSessions] = useState<ParkingSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await getSessions();
+          if (!active) return;
+          setSessions(
+            data
+              .filter((s) => s.user_id === DEMO_USER_ID)
+              .sort(
+                (a, b) =>
+                  new Date(b.inicio).getTime() - new Date(a.inicio).getTime(),
+              ),
+          );
+        } catch (err) {
+          if (active) {
+            setError(err instanceof Error ? err.message : 'Error al cargar historial');
+          }
+        } finally {
+          if (active) setLoading(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
   return (
     <View style={styles.container}>
-      <AppHeader title="Historial" subtitle="Sesiones de estacionamiento" />
+      <AppHeader title="Historial" subtitle="Sesiones desde la API" />
       <View style={styles.content}>
-        {PLACEHOLDER_SESSIONS.map((session) => (
+        {loading ? <ActivityIndicator color={colors.green} /> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {!loading && !error && sessions.length === 0 ? (
+          <Text style={styles.hint}>Todavía no hay sesiones para este usuario.</Text>
+        ) : null}
+        {sessions.map((session) => (
           <View key={session.id} style={styles.card}>
-            <Text style={styles.date}>{session.date}</Text>
+            <Text style={styles.date}>
+              {new Date(session.inicio).toLocaleString('es-AR')}
+            </Text>
             <Text style={styles.meta}>
-              {session.duration} · {session.amount}
+              {session.patente} · {session.estado}
+              {session.estado === 'FINALIZADO'
+                ? ` · ${formatARS(session.costo_total)}`
+                : ''}
             </Text>
           </View>
         ))}
-        <Text style={styles.hint}>
-          Próximo paso: listar sesiones reales desde `/api/sessions/`.
-        </Text>
       </View>
     </View>
   );
@@ -60,6 +103,9 @@ const styles = StyleSheet.create({
   hint: {
     color: colors.textMuted,
     fontSize: 13,
-    marginTop: 8,
+  },
+  error: {
+    color: '#DC2626',
+    fontSize: 13,
   },
 });
