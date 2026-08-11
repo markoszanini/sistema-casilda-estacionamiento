@@ -34,18 +34,23 @@ function hiddenTabOptions() {
 export function AppTabs() {
   const { role } = useAuth();
   const isInspector = role === 'INSPECTOR';
-  // INSPECTOR: oculta Estacionar y muestra Inspector.
+  // INSPECTOR: solo ve Inspector y Perfil.
   // VECINO: oculta Inspector (y con eso la cámara).
   const hideEstacionar = isInspector;
+  const hideInicio = isInspector;
+  const hideVehiculos = isInspector;
   const hideInspector = !isInspector;
 
   return (
     <Tab.Navigator
+      initialRouteName={isInspector ? 'Inspector' : 'Inicio'}
       screenOptions={({ route }) => {
         const isHidden =
           route.name === 'Billetera' ||
+          (hideInicio && route.name === 'Inicio') ||
           (hideEstacionar && route.name === 'Estacionar') ||
-          (hideInspector && route.name === 'Inspector');
+          (hideInspector && route.name === 'Inspector') ||
+          (hideVehiculos && route.name === 'Vehiculos');
         return {
           headerShown: false,
           tabBarActiveTintColor: colors.white,
@@ -104,7 +109,11 @@ export function AppTabs() {
         };
       }}
     >
-      <Tab.Screen name="Inicio" component={HomeScreen} />
+      <Tab.Screen
+        name="Inicio"
+        component={HomeScreen}
+        options={hideInicio ? hiddenTabOptions() : undefined}
+      />
       <Tab.Screen
         name="Estacionar"
         component={ParkScreen}
@@ -118,7 +127,10 @@ export function AppTabs() {
       <Tab.Screen
         name="Vehiculos"
         component={VehiclesScreen}
-        options={{ title: 'Vehículos' }}
+        options={{
+          title: 'Vehículos',
+          ...(hideVehiculos ? hiddenTabOptions() : {}),
+        }}
       />
       <Tab.Screen name="Perfil" component={ProfileScreen} />
       <Tab.Screen
