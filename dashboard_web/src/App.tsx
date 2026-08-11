@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
+  createInspectorRole,
   fetchActiveSessions,
   fetchInfractions,
   fetchReports,
@@ -53,6 +54,9 @@ export default function App() {
   const [report, setReport] = useState<ReportsResponse | null>(null)
   const [reportLoading, setReportLoading] = useState(true)
   const [reportError, setReportError] = useState<string | null>(null)
+  const [inspectorUserId, setInspectorUserId] = useState('999')
+  const [creatingInspector, setCreatingInspector] = useState(false)
+  const [inspectorMessage, setInspectorMessage] = useState<string | null>(null)
 
   const loadReports = useCallback(async (period: ReportPeriod) => {
     setReportLoading(true)
@@ -147,8 +151,57 @@ export default function App() {
     }
   }
 
+  const onCreateInspector = async (event: FormEvent) => {
+    event.preventDefault()
+    const userId = Number(inspectorUserId)
+    if (!userId || userId < 1) {
+      setInspectorMessage('Ingresá un user_id válido.')
+      return
+    }
+    setCreatingInspector(true)
+    setInspectorMessage(null)
+    try {
+      const result = await createInspectorRole(userId)
+      setInspectorMessage(
+        `Inspector dado de alta · user_id ${result.user_id} · rol ${result.rol}`,
+      )
+    } catch (err) {
+      setInspectorMessage(
+        err instanceof Error ? err.message : 'No se pudo dar de alta el inspector',
+      )
+    } finally {
+      setCreatingInspector(false)
+    }
+  }
+
   return (
-    <div className="page">
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <p className="eyebrow">Municipalidad</p>
+          <strong>Casilda Conecta</strong>
+        </div>
+        <form className="sidebar-form" onSubmit={(e) => void onCreateInspector(e)}>
+          <h2>Dar de alta Inspector</h2>
+          <label htmlFor="inspector-user-id">user_id</label>
+          <input
+            id="inspector-user-id"
+            type="number"
+            min={1}
+            value={inspectorUserId}
+            onChange={(e) => setInspectorUserId(e.target.value)}
+            placeholder="999"
+          />
+          <button type="submit" className="btn-primary" disabled={creatingInspector}>
+            {creatingInspector ? 'Guardando…' : 'Dar de alta'}
+          </button>
+          {inspectorMessage ? (
+            <p className="sidebar-msg">{inspectorMessage}</p>
+          ) : null}
+        </form>
+      </aside>
+
+      <div className="page">
       <header className="header">
         <div>
           <p className="eyebrow">Municipalidad de Casilda</p>
@@ -391,6 +444,7 @@ export default function App() {
       </section>
 
       <footer className="footer">© 2026 Municipalidad de Casilda</footer>
+      </div>
     </div>
   )
 }

@@ -1,3 +1,10 @@
+export type UserRole = 'VECINO' | 'INSPECTOR' | 'EMPLEADO';
+
+export type UserRoleResponse = {
+  user_id: number;
+  rol: UserRole;
+};
+
 export type UserWallet = {
   user_id: number;
   saldo_actual: string;

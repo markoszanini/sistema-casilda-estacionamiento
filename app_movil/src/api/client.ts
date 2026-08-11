@@ -6,6 +6,8 @@ import type {
   ParkingSession,
   RecargarResponse,
   ScanResult,
+  UserRole,
+  UserRoleResponse,
   UserWallet,
   VehiclePayload,
 } from './types';
@@ -51,6 +53,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 function asList<T>(data: T[] | { results: T[] }): T[] {
   return Array.isArray(data) ? data : data.results;
+}
+
+export async function getUserRole(userId: number): Promise<UserRole> {
+  try {
+    const data = await request<UserRoleResponse>(`/api/roles/${userId}/`);
+    return data.rol ?? 'VECINO';
+  } catch {
+    return 'VECINO';
+  }
 }
 
 export async function ensureWallet(userId: number): Promise<UserWallet> {

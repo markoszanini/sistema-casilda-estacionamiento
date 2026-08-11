@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../context/AuthContext';
 import { HomeScreen } from '../screens/HomeScreen';
 import { InspectorScreen } from '../screens/InspectorScreen';
 import { ParkScreen } from '../screens/ParkScreen';
@@ -19,11 +20,32 @@ export type AppTabParamList = {
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
+function hiddenTabOptions() {
+  return {
+    tabBarButton: () => null,
+    tabBarItemStyle: {
+      display: 'none' as const,
+      width: 0,
+      flex: 0,
+    },
+  };
+}
+
 export function AppTabs() {
+  const { role } = useAuth();
+  const isInspector = role === 'INSPECTOR';
+  // INSPECTOR: oculta Estacionar y muestra Inspector.
+  // VECINO: oculta Inspector (y con eso la cámara).
+  const hideEstacionar = isInspector;
+  const hideInspector = !isInspector;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
-        const isHidden = route.name === 'Billetera';
+        const isHidden =
+          route.name === 'Billetera' ||
+          (hideEstacionar && route.name === 'Estacionar') ||
+          (hideInspector && route.name === 'Inspector');
         return {
           headerShown: false,
           tabBarActiveTintColor: colors.white,
@@ -83,8 +105,16 @@ export function AppTabs() {
       }}
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
-      <Tab.Screen name="Estacionar" component={ParkScreen} />
-      <Tab.Screen name="Inspector" component={InspectorScreen} />
+      <Tab.Screen
+        name="Estacionar"
+        component={ParkScreen}
+        options={hideEstacionar ? hiddenTabOptions() : undefined}
+      />
+      <Tab.Screen
+        name="Inspector"
+        component={InspectorScreen}
+        options={hideInspector ? hiddenTabOptions() : undefined}
+      />
       <Tab.Screen
         name="Vehiculos"
         component={VehiclesScreen}
@@ -94,14 +124,7 @@ export function AppTabs() {
       <Tab.Screen
         name="Billetera"
         component={WalletScreen}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: {
-            display: 'none',
-            width: 0,
-            flex: 0,
-          },
-        }}
+        options={hiddenTabOptions()}
       />
     </Tab.Navigator>
   );

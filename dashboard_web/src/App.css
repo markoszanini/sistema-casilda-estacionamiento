@@ -20,9 +20,93 @@ body {
 }
 
 .page {
+  flex: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 20px 40px;
+  min-width: 0;
+}
+
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  width: 260px;
+  flex-shrink: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a6847, #075539);
+  color: #fff;
+  padding: 20px 16px;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-brand .eyebrow {
+  margin: 0 0 4px;
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
+
+.sidebar-brand strong {
+  font-size: 1.05rem;
+}
+
+.sidebar-form {
+  margin-top: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-form h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.sidebar-form label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.sidebar-form input {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  background: #fff;
+  color: var(--text);
+}
+
+.sidebar-form .btn-primary {
+  margin-top: 4px;
+}
+
+.sidebar-msg {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #fef9c3;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    position: static;
+  }
 }
 
 .header {

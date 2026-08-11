@@ -14,27 +14,40 @@ import { postScan } from '../api/client';
 import { recognizePlateFromPhoto } from '../api/plateRecognizer';
 import type { ScanResult } from '../api/types';
 import { AppHeader } from '../components/AppHeader';
+import { useAuth } from '../context/AuthContext';
 import { PLATERECOGNIZER_TOKEN } from '../config';
 import { colors } from '../theme/colors';
 
 type ScanStatus = 'idle' | 'processing' | 'done' | 'error';
 
 export function InspectorScreen() {
+  const { role } = useAuth();
+  const cameraAllowed = role === 'INSPECTOR';
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [status, setStatus] = useState<ScanStatus>('idle');
-  const [message, setMessage] = useState('Apuntá a la patente y tocá escanear');
+  const [message, setMessage] = useState(
+    cameraAllowed
+      ? 'Apuntá a la patente y tocá escanear'
+      : 'Ingresá la patente manualmente',
+  );
   const [manualPlate, setManualPlate] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [lastPlate, setLastPlate] = useState<string | null>(null);
 
-  const cameraAvailable = Platform.OS !== 'web' && Boolean(permission?.granted);
+  const cameraAvailable =
+    cameraAllowed && Platform.OS !== 'web' && Boolean(permission?.granted);
 
   useEffect(() => {
-    if (Platform.OS !== 'web' && permission && !permission.granted) {
+    if (
+      cameraAllowed &&
+      Platform.OS !== 'web' &&
+      permission &&
+      !permission.granted
+    ) {
       void requestPermission();
     }
-  }, [permission, requestPermission]);
+  }, [cameraAllowed, permission, requestPermission]);
 
   const getCoords = async () => {
     const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
@@ -82,7 +95,7 @@ export function InspectorScreen() {
   };
 
   const onScanCamera = async () => {
-    if (!cameraRef.current) {
+    if (!cameraAllowed || !cameraRef.current) {
       setStatus('error');
       setMessage('Cámara no disponible');
       return;
@@ -146,31 +159,40 @@ export function InspectorScreen() {
       <AppHeader title="Modo Inspector" subtitle="Control y Fiscalización LPR" />
 
       <View style={styles.body}>
-        {Platform.OS !== 'web' ? (
-          !permission ? (
-            <View style={styles.centerBox}>
-              <ActivityIndicator color={colors.yellow} />
-            </View>
-          ) : !permission.granted ? (
-            <View style={styles.centerBox}>
-              <Text style={styles.info}>Necesitamos permiso de cámara</Text>
-              <Pressable style={styles.cta} onPress={() => void requestPermission()}>
-                <Text style={styles.ctaText}>Permitir cámara</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.cameraWrap}>
-              <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-              <View style={styles.overlay}>
-                <View style={styles.frame} />
-                <Text style={styles.overlayText}>Encuadrá la patente</Text>
+        {cameraAllowed ? (
+          Platform.OS !== 'web' ? (
+            !permission ? (
+              <View style={styles.centerBox}>
+                <ActivityIndicator color={colors.yellow} />
               </View>
+            ) : !permission.granted ? (
+              <View style={styles.centerBox}>
+                <Text style={styles.info}>Necesitamos permiso de cámara</Text>
+                <Pressable style={styles.cta} onPress={() => void requestPermission()}>
+                  <Text style={styles.ctaText}>Permitir cámara</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.cameraWrap}>
+                <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+                <View style={styles.overlay}>
+                  <View style={styles.frame} />
+                  <Text style={styles.overlayText}>Encuadrá la patente</Text>
+                </View>
+              </View>
+            )
+          ) : (
+            <View style={styles.centerBox}>
+              <Text style={styles.info}>
+                En web usá carga manual. En dispositivo nativo se activa la cámara.
+              </Text>
             </View>
           )
         ) : (
           <View style={styles.centerBox}>
             <Text style={styles.info}>
-              En web usá carga manual. En dispositivo nativo se activa la cámara.
+              La cámara del Inspector está deshabilitada para tu rol (VECINO).
+              Usá la carga manual de patente.
             </Text>
           </View>
         )}
@@ -207,7 +229,7 @@ export function InspectorScreen() {
             )}
           </Pressable>
 
-          {!PLATERECOGNIZER_TOKEN ? (
+          {!PLATERECOGNIZER_TOKEN && cameraAllowed ? (
             <Text style={styles.hint}>
               Tip: configurá EXPO_PUBLIC_PLATERECOGNIZER_TOKEN en app_movil/.env para OCR automático.
             </Text>

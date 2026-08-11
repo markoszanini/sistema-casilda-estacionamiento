@@ -129,3 +129,20 @@ export async function fetchReports(
   const query = period ? `?period=${period}` : ''
   return getJson<ReportsResponse>(`/api/reports/${query}`)
 }
+
+export type UserRole = 'VECINO' | 'INSPECTOR' | 'EMPLEADO'
+
+export type UserRoleResponse = {
+  user_id: number
+  rol: UserRole
+}
+
+export async function createInspectorRole(
+  userId: number,
+): Promise<UserRoleResponse> {
+  return postJson<UserRoleResponse>('/api/roles/', {
+    user_id: userId,
+    rol: 'INSPECTOR',
+  })
+}
+
