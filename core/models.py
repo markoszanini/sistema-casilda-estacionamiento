@@ -92,3 +92,19 @@ class Infraction(models.Model):
 
     def __str__(self):
         return f"Infracción {self.id} - {self.estado}"
+
+class SystemRole(models.Model):
+    """
+    Control de acceso. Asocia un ID de usuario a un rol específico.
+    Si un user_id no existe acá, se asume que es VECINO.
+    """
+    ROL_CHOICES = [
+        ('VECINO', 'Vecino'),
+        ('INSPECTOR', 'Inspector'),
+        ('EMPLEADO', 'Empleado Municipal'),
+    ]
+    user_id = models.IntegerField(primary_key=True, help_text="ID del usuario en Casilda Conecta")
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='VECINO')
+
+    def __str__(self):
+        return f"Usuario {self.user_id} - Rol: {self.rol}"

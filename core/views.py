@@ -6,14 +6,15 @@ from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from .models import UserWallet, UserFavoriteVehicle, Transaction, ParkingSession, LPRScan, Infraction
+from .models import UserWallet, UserFavoriteVehicle, Transaction, ParkingSession, LPRScan, Infraction, SystemRole
 from .serializers import (
     UserWalletSerializer,
     UserFavoriteVehicleSerializer,
     TransactionSerializer,
     ParkingSessionSerializer,
     LPRScanSerializer,
-    InfractionSerializer
+    InfractionSerializer,
+    SystemRoleSerializer
 )
 
 
@@ -318,3 +319,18 @@ class InfractionViewSet(viewsets.ModelViewSet):
             'tenia_sesion_activa': bool(sesion_activa),
             'monto_multa': float(monto),
         }, status=status.HTTP_201_CREATED)
+
+class SystemRoleViewSet(viewsets.ModelViewSet):
+    queryset = SystemRole.objects.all()
+    serializer_class = SystemRoleSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Devuelve el rol de un usuario. Si no existe en la base, devuelve 'VECINO' por defecto.
+        """
+        user_id = kwargs.get('pk')
+        try:
+            role = SystemRole.objects.get(user_id=user_id)
+            return Response({'user_id': role.user_id, 'rol': role.rol})
+        except SystemRole.DoesNotExist:
+            return Response({'user_id': int(user_id), 'rol': 'VECINO'})

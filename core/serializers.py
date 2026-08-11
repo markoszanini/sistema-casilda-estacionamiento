@@ -1,5 +1,13 @@
 from rest_framework import serializers
-from .models import UserWallet, UserFavoriteVehicle, Transaction, ParkingSession, LPRScan, Infraction
+from .models import (
+    UserWallet,
+    UserFavoriteVehicle,
+    Transaction,
+    ParkingSession,
+    LPRScan,
+    Infraction,
+    SystemRole
+)
 
 class UserWalletSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,4 +37,9 @@ class LPRScanSerializer(serializers.ModelSerializer):
 class InfractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Infraction
+        fields = '__all__'
+
+class SystemRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemRole
         fields = '__all__'
