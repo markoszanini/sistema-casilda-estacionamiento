@@ -33,3 +33,7 @@ Este documento es un registro vivo del progreso del equipo. Marca las tareas con
     - `[x]` Alta/edición de vehículos
     - `[x]` Polígono de zona medido en mapa
     - `[x]` Dashboard: buscador LPR + registrar infracción
+    - `[x]` **Fase 2 — Modo Inspector (App Móvil)**
+        - `[x]` Pantalla de cámara LPR para inspectores
+        - `[x]` Integración PlateRecognizer + POST `/api/scans/`
+        - `[x]` Resultado visual verde (VIGENTE) / rojo (EN INFRACCIÓN)

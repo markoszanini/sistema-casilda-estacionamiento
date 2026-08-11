@@ -219,6 +219,58 @@ class LPRScanViewSet(viewsets.ModelViewSet):
     queryset = LPRScan.objects.all()
     serializer_class = LPRScanSerializer
 
+    def create(self, request, *args, **kwargs):
+        """
+        Recibe un escaneo LPR. Si la patente tiene sesión ACTIVA → VIGENTE (verde).
+        Si no → EN_INFRACCION (rojo) y opcionalmente genera la multa.
+        """
+        from decimal import Decimal
+
+        patente = (request.data.get('patente_leida') or '').strip().upper()
+        if not patente:
+            return Response({'error': 'patente_leida es requerida.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            latitud = float(request.data.get('latitud'))
+            longitud = float(request.data.get('longitud'))
+        except (TypeError, ValueError):
+            return Response({'error': 'latitud y longitud son requeridas.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        sesion = ParkingSession.objects.filter(patente=patente, estado='ACTIVO').first()
+        scan = LPRScan.objects.create(
+            patente_leida=patente,
+            latitud=latitud,
+            longitud=longitud,
+            parking_session=sesion,
+            url_foto=request.data.get('url_foto') or None,
+        )
+
+        if sesion:
+            estado = 'VIGENTE'
+            infraccion_id = None
+        else:
+            estado = 'EN_INFRACCION'
+            infraccion, _ = Infraction.objects.get_or_create(
+                scan=scan,
+                defaults={
+                    'monto_multa': Decimal(str(request.data.get('monto_multa', '1500.00'))),
+                    'estado': 'PENDIENTE',
+                },
+            )
+            infraccion_id = infraccion.id
+
+        return Response({
+            'id': scan.id,
+            'patente_leida': scan.patente_leida,
+            'latitud': scan.latitud,
+            'longitud': scan.longitud,
+            'fecha_hora': scan.fecha_hora,
+            'parking_session': sesion.id if sesion else None,
+            'url_foto': scan.url_foto,
+            'estado': estado,
+            'infraction_id': infraccion_id,
+        }, status=status.HTTP_201_CREATED)
+
 class InfractionViewSet(viewsets.ModelViewSet):
     queryset = Infraction.objects.all()
     serializer_class = InfractionSerializer

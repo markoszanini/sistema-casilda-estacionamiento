@@ -52,3 +52,15 @@ export type RecargarResponse = {
   monto_acreditado: number;
   saldo_actual: number;
 };
+
+export type ScanResult = {
+  id: number;
+  patente_leida: string;
+  latitud: number;
+  longitud: number;
+  fecha_hora: string;
+  parking_session: number | null;
+  url_foto: string | null;
+  estado: 'VIGENTE' | 'EN_INFRACCION';
+  infraction_id: number | null;
+};

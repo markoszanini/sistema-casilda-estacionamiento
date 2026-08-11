@@ -5,6 +5,7 @@ import type {
   IniciarParkingResponse,
   ParkingSession,
   RecargarResponse,
+  ScanResult,
   UserWallet,
   VehiclePayload,
 } from './types';
@@ -157,5 +158,22 @@ export async function finalizarEstacionamiento(
   return request<FinalizarParkingResponse>('/api/sessions/finalizar/', {
     method: 'POST',
     body: JSON.stringify({ sesion_id: sesionId }),
+  });
+}
+
+export async function postScan(payload: {
+  patente_leida: string;
+  latitud: number;
+  longitud: number;
+  url_foto?: string | null;
+}): Promise<ScanResult> {
+  return request<ScanResult>('/api/scans/', {
+    method: 'POST',
+    body: JSON.stringify({
+      patente_leida: payload.patente_leida.trim().toUpperCase(),
+      latitud: payload.latitud,
+      longitud: payload.longitud,
+      url_foto: payload.url_foto ?? null,
+    }),
   });
 }

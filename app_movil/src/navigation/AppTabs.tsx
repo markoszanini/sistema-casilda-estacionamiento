@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens/HomeScreen';
+import { InspectorScreen } from '../screens/InspectorScreen';
 import { ParkScreen } from '../screens/ParkScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { VehiclesScreen } from '../screens/VehiclesScreen';
@@ -10,6 +11,7 @@ import { colors } from '../theme/colors';
 export type AppTabParamList = {
   Inicio: undefined;
   Estacionar: undefined;
+  Inspector: undefined;
   Vehiculos: undefined;
   Perfil: undefined;
   Billetera: undefined;
@@ -30,7 +32,7 @@ export function AppTabs() {
             backgroundColor: colors.green,
             borderTopWidth: 0,
             height: 72,
-            paddingHorizontal: 8,
+            paddingHorizontal: 4,
             paddingBottom: 10,
             paddingTop: 8,
           },
@@ -47,12 +49,12 @@ export function AppTabs() {
             : {
                 flex: 1,
                 minWidth: 0,
-                paddingHorizontal: 4,
+                paddingHorizontal: 2,
                 alignItems: 'center',
                 justifyContent: 'center',
               },
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: '700',
             marginTop: 2,
           },
@@ -63,9 +65,11 @@ export function AppTabs() {
                 ? 'home'
                 : route.name === 'Estacionar'
                   ? 'location'
-                  : route.name === 'Vehiculos'
-                    ? 'car'
-                    : 'person';
+                  : route.name === 'Inspector'
+                    ? 'camera'
+                    : route.name === 'Vehiculos'
+                      ? 'car'
+                      : 'person';
 
             return (
               <Ionicons
@@ -80,6 +84,7 @@ export function AppTabs() {
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Estacionar" component={ParkScreen} />
+      <Tab.Screen name="Inspector" component={InspectorScreen} />
       <Tab.Screen
         name="Vehiculos"
         component={VehiclesScreen}
