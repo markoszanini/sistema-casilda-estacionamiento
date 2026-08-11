@@ -189,6 +189,7 @@ export function VehiclesScreen() {
               value={form.patente}
               onChangeText={(v) => setField('patente', v)}
             />
+            <Text style={styles.hint}>Formatos válidos: ABC123, AB123CD</Text>
             <TextInput
               style={styles.input}
               placeholder="Alias (ej: Auto principal)"

@@ -112,6 +112,12 @@ body {
   text-transform: uppercase;
 }
 
+.field-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .btn-primary {
   background: var(--yellow);
   color: var(--text);

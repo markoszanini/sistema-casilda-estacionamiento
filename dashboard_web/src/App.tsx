@@ -186,6 +186,7 @@ export default function App() {
             {registering ? 'Registrando…' : 'Registrar infracción'}
           </button>
         </div>
+        <p className="field-hint">Formatos válidos: ABC123, AB123CD</p>
         {actionMessage ? <p className="action-msg">{actionMessage}</p> : null}
       </section>
 

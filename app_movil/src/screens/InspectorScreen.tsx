@@ -185,6 +185,7 @@ export function InspectorScreen() {
             value={manualPlate}
             onChangeText={setManualPlate}
           />
+          <Text style={styles.hint}>Formatos válidos: ABC123, AB123CD</Text>
 
           <Pressable
             style={[styles.cta, status === 'processing' && styles.ctaDisabled]}
