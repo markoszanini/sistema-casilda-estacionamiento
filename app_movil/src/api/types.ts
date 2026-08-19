@@ -39,12 +39,30 @@ export type ParkingSession = {
   fin: string | null;
   estado: 'ACTIVO' | 'FINALIZADO';
   costo_total: string;
+  calle?: string | null;
+  altura?: number | null;
+  seccion?: string | null;
+  duracion_minutos?: number | null;
+  medio_pago?: string | null;
+  marca?: string | null;
+  modelo?: string | null;
+};
+
+export type IniciarParkingPayload = {
+  patente: string;
+  calle: string;
+  altura: number;
+  duracion_minutos: number;
+  medio_pago: string;
 };
 
 export type IniciarParkingResponse = {
   mensaje: string;
   sesion_id: number;
-  saldo_actual: string;
+  seccion?: string;
+  costo_cobrado?: number;
+  saldo_actual: string | number;
+  duracion_minutos?: number;
 };
 
 export type FinalizarParkingResponse = {

@@ -1,4 +1,23 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? ''
+import { Capacitor } from '@capacitor/core'
+
+/**
+ * En web (Vite) el proxy de /api alcanza a Django.
+ * En Capacitor (dispositivo/emulador) hace falta una URL absoluta.
+ * - Emulador Android: http://10.0.2.2:8000
+ * - Celular físico: http://IP-DE-TU-PC:8000 (misma WiFi)
+ * Override: VITE_API_URL
+ */
+const nativeFallback =
+  Capacitor.getPlatform() === 'android'
+    ? 'http://10.0.2.2:8000'
+    : Capacitor.isNativePlatform()
+      ? 'http://127.0.0.1:8000'
+      : ''
+
+export const API_BASE =
+  import.meta.env.VITE_API_URL ??
+  (Capacitor.isNativePlatform() ? nativeFallback : '')
+
 
 export type ParkingSession = {
   id: number
@@ -8,6 +27,38 @@ export type ParkingSession = {
   fin: string | null
   estado: 'ACTIVO' | 'FINALIZADO'
   costo_total: string
+  calle?: string | null
+  altura?: number | null
+  seccion?: string | null
+  duracion_minutos?: number | null
+  medio_pago?: string | null
+  marca?: string | null
+  modelo?: string | null
+}
+
+export type SeccionSession = {
+  id: number
+  patente: string
+  marca: string | null
+  modelo: string | null
+  calle: string | null
+  altura: number | null
+  seccion: string | null
+  duracion_minutos: number | null
+  inicio: string
+  fin_estimado: string | null
+  medio_pago: string | null
+  user_id: number
+}
+
+export type ActaResponse = {
+  id: number
+  patente: string
+  seccion: string | null
+  url_foto: string | null
+  observaciones: string | null
+  timestamp: string
+  mensaje: string
 }
 
 export type LPRScan = {
@@ -143,6 +194,29 @@ export async function createInspectorRole(
   return postJson<UserRoleResponse>('/api/roles/', {
     user_id: userId,
     rol: 'INSPECTOR',
+  })
+}
+
+export async function fetchSessionsBySeccion(
+  seccion: string,
+): Promise<SeccionSession[]> {
+  const q = encodeURIComponent(seccion.trim().toUpperCase())
+  return getJson<SeccionSession[]>(`/api/sessions/por-seccion/?seccion=${q}`)
+}
+
+export async function createActa(payload: {
+  patente: string
+  seccion?: string
+  url_foto?: string | null
+  observaciones?: string
+  generada_por?: number
+}): Promise<ActaResponse> {
+  return postJson<ActaResponse>('/api/actas/', {
+    patente: payload.patente.trim().toUpperCase(),
+    seccion: payload.seccion ?? null,
+    url_foto: payload.url_foto ?? null,
+    observaciones: payload.observaciones ?? null,
+    generada_por: payload.generada_por ?? null,
   })
 }
 

@@ -8,6 +8,7 @@ from .views import (
     LPRScanViewSet,
     InfractionViewSet,
     SystemRoleViewSet,
+    ActaInfraccionViewSet,
     reports,
 )
 
@@ -19,6 +20,7 @@ router.register(r'sessions', ParkingSessionViewSet)
 router.register(r'scans', LPRScanViewSet)
 router.register(r'infractions', InfractionViewSet)
 router.register(r'roles', SystemRoleViewSet)
+router.register(r'actas', ActaInfraccionViewSet)
 
 urlpatterns = [
     path('api/reports/', reports, name='reports'),

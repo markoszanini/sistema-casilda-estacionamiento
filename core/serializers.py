@@ -6,7 +6,8 @@ from .models import (
     ParkingSession,
     LPRScan,
     Infraction,
-    SystemRole
+    SystemRole,
+    ActaInfraccion,
 )
 
 class UserWalletSerializer(serializers.ModelSerializer):
@@ -42,4 +43,10 @@ class InfractionSerializer(serializers.ModelSerializer):
 class SystemRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemRole
+        fields = '__all__'
+
+
+class ActaInfraccionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActaInfraccion
         fields = '__all__'

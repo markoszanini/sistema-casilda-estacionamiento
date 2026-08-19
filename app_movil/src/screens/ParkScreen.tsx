@@ -18,7 +18,7 @@ import {
 import type { FavoriteVehicle, ParkingSession } from '../api/types';
 import { AppHeader } from '../components/AppHeader';
 import { OsmMap } from '../components/OsmMap';
-import { DEMO_PATENTE } from '../config';
+import { StartParkingModal } from '../components/StartParkingModal';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 import { formatARS } from '../utils/money';
@@ -31,9 +31,10 @@ export function ParkScreen() {
   } | null>(null);
   const [saldo, setSaldo] = useState<string | null>(null);
   const [session, setSession] = useState<ParkingSession | null>(null);
-  const [vehicle, setVehicle] = useState<FavoriteVehicle | null>(null);
+  const [vehicles, setVehicles] = useState<FavoriteVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showStartModal, setShowStartModal] = useState(false);
   const [message, setMessage] = useState('Mapa de zona medido');
   const [error, setError] = useState<string | null>(null);
 
@@ -41,18 +42,20 @@ export function ParkScreen() {
     if (!userId) return;
     setError(null);
     try {
-      const [wallet, active, vehicles] = await Promise.all([
+      const [wallet, active, list] = await Promise.all([
         getWallet(userId),
         getActiveSessionForUser(userId),
         getVehicles(userId),
       ]);
       setSaldo(wallet.saldo_actual);
       setSession(active);
-      setVehicle(vehicles[0] ?? null);
+      setVehicles(list);
       setMessage(
         active
-          ? `ACTIVO · ${active.patente}`
-          : `Patente: ${vehicles[0]?.patente ?? DEMO_PATENTE}`,
+          ? `ACTIVO · ${active.patente}${active.seccion ? ` · ${active.seccion}` : ''}`
+          : list[0]
+            ? `Patente: ${list[0].patente}`
+            : 'Registrá un vehículo para estacionar',
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error de API');
@@ -92,21 +95,39 @@ export function ParkScreen() {
     };
   }, []);
 
-  const onToggle = async () => {
+  const onStop = async () => {
+    if (!userId || !session) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      const result = await finalizarEstacionamiento(session.id);
+      setMessage(
+        `Finalizado · ${formatARS(result.costo_cobrado)} · saldo ${formatARS(result.saldo_restante)}`,
+      );
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const onStartConfirm = async (payload: {
+    patente: string;
+    calle: string;
+    altura: number;
+    duracion_minutos: number;
+    medio_pago: string;
+  }) => {
     if (!userId) return;
     setActionLoading(true);
     setError(null);
     try {
-      const patente = vehicle?.patente ?? DEMO_PATENTE;
-      if (session) {
-        const result = await finalizarEstacionamiento(session.id);
-        setMessage(
-          `Finalizado · ${formatARS(result.costo_cobrado)} · saldo ${formatARS(result.saldo_restante)}`,
-        );
-      } else {
-        const result = await iniciarEstacionamiento(userId, patente);
-        setMessage(result.mensaje);
-      }
+      const result = await iniciarEstacionamiento(userId, payload);
+      setShowStartModal(false);
+      setMessage(
+        `${result.mensaje}${result.seccion ? ` · ${result.seccion}` : ''}`,
+      );
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo completar');
@@ -138,10 +159,14 @@ export function ParkScreen() {
           style={[styles.cta, parkingActive && styles.ctaStop]}
           disabled={loading || actionLoading}
           onPress={() => {
-            void onToggle();
+            if (parkingActive) {
+              void onStop();
+            } else {
+              setShowStartModal(true);
+            }
           }}
         >
-          {actionLoading ? (
+          {actionLoading && parkingActive ? (
             <ActivityIndicator color={colors.white} />
           ) : (
             <Text style={styles.ctaText}>
@@ -152,6 +177,16 @@ export function ParkScreen() {
           )}
         </Pressable>
       </View>
+
+      <StartParkingModal
+        visible={showStartModal}
+        vehicles={vehicles}
+        loading={actionLoading}
+        onCancel={() => setShowStartModal(false)}
+        onConfirm={(payload) => {
+          void onStartConfirm(payload);
+        }}
+      />
     </View>
   );
 }

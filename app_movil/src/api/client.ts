@@ -1,7 +1,8 @@
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, SCANS_URL } from '../config';
 import type {
   FavoriteVehicle,
   FinalizarParkingResponse,
+  IniciarParkingPayload,
   IniciarParkingResponse,
   ParkingSession,
   RecargarResponse,
@@ -155,11 +156,18 @@ export async function getActiveSessionForUser(
 
 export async function iniciarEstacionamiento(
   userId: number,
-  patente: string,
+  payload: IniciarParkingPayload,
 ): Promise<IniciarParkingResponse> {
   return request<IniciarParkingResponse>('/api/sessions/iniciar/', {
     method: 'POST',
-    body: JSON.stringify({ user_id: userId, patente }),
+    body: JSON.stringify({
+      user_id: userId,
+      patente: payload.patente.trim().toUpperCase(),
+      calle: payload.calle.trim().toUpperCase(),
+      altura: payload.altura,
+      duracion_minutos: payload.duracion_minutos,
+      medio_pago: payload.medio_pago,
+    }),
   });
 }
 
@@ -172,19 +180,104 @@ export async function finalizarEstacionamiento(
   });
 }
 
+function normalizeScanResult(
+  payload: Record<string, unknown>,
+  patenteFallback: string,
+): ScanResult {
+  const patente =
+    typeof payload.patente_leida === 'string'
+      ? payload.patente_leida
+      : patenteFallback;
+
+  const rawEstado =
+    typeof payload.estado === 'string' ? payload.estado.toUpperCase() : '';
+
+  let estado: ScanResult['estado'];
+  if (
+    rawEstado === 'VIGENTE' ||
+    rawEstado === 'ACTIVO' ||
+    rawEstado === 'OK' ||
+    payload.parking_session != null
+  ) {
+    estado = 'VIGENTE';
+  } else if (
+    rawEstado === 'EN_INFRACCION' ||
+    rawEstado === 'INFRACCION' ||
+    rawEstado === 'IMPAGO' ||
+    payload.infraction_id != null
+  ) {
+    estado = 'EN_INFRACCION';
+  } else {
+    // Si el backend no manda estado, asumimos infracción cuando no hay sesión
+    estado = payload.parking_session ? 'VIGENTE' : 'EN_INFRACCION';
+  }
+
+  return {
+    id: typeof payload.id === 'number' ? payload.id : 0,
+    patente_leida: patente,
+    latitud: typeof payload.latitud === 'number' ? payload.latitud : 0,
+    longitud: typeof payload.longitud === 'number' ? payload.longitud : 0,
+    fecha_hora:
+      typeof payload.fecha_hora === 'string'
+        ? payload.fecha_hora
+        : new Date().toISOString(),
+    parking_session:
+      typeof payload.parking_session === 'number'
+        ? payload.parking_session
+        : null,
+    url_foto: typeof payload.url_foto === 'string' ? payload.url_foto : null,
+    estado,
+    infraction_id:
+      typeof payload.infraction_id === 'number' ? payload.infraction_id : null,
+  };
+}
+
+/**
+ * Envía un escaneo LPR al backend unificado de Casilda
+ * (EXPO_PUBLIC_SCANS_URL / testing.casilda.gob.ar).
+ */
 export async function postScan(payload: {
   patente_leida: string;
   latitud: number;
   longitud: number;
   url_foto?: string | null;
 }): Promise<ScanResult> {
-  return request<ScanResult>('/api/scans/', {
+  const patente = payload.patente_leida.trim().toUpperCase();
+  const body = {
+    patente_leida: patente,
+    latitud: payload.latitud,
+    longitud: payload.longitud,
+    url_foto: payload.url_foto ?? null,
+  };
+
+  const response = await fetch(SCANS_URL, {
     method: 'POST',
-    body: JSON.stringify({
-      patente_leida: payload.patente_leida.trim().toUpperCase(),
-      latitud: payload.latitud,
-      longitud: payload.longitud,
-      url_foto: payload.url_foto ?? null,
-    }),
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   });
+
+  let data: Record<string, unknown> = {};
+  const text = await response.text();
+  if (text) {
+    try {
+      data = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      data = { error: text };
+    }
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      typeof data.error === 'string'
+        ? data.error
+        : typeof data.detail === 'string'
+          ? data.detail
+          : `Error HTTP ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return normalizeScanResult(data, patente);
 }

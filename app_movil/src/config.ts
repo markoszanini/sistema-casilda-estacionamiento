@@ -1,10 +1,18 @@
 /**
- * URL base del backend Django.
+ * URL base del backend Django local (wallets, roles, sessions, etc.).
  * - Web / emulador local: http://127.0.0.1:8000
  * - Celular físico: http://IP-DE-TU-PC:8000 (misma WiFi)
  */
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
+
+/**
+ * Endpoint unificado de escaneos LPR (inspectores).
+ * Testing Casilda: https://testing.casilda.gob.ar/api/estacionamiento/scans/
+ */
+export const SCANS_URL =
+  process.env.EXPO_PUBLIC_SCANS_URL ??
+  'https://testing.casilda.gob.ar/api/estacionamiento/scans/';
 
 /** Token PlateRecognizer (configurar en .env como EXPO_PUBLIC_PLATERECOGNIZER_TOKEN) */
 export const PLATERECOGNIZER_TOKEN =

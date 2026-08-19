@@ -37,3 +37,7 @@ Este documento es un registro vivo del progreso del equipo. Marca las tareas con
         - `[x]` Pantalla de cámara LPR para inspectores
         - `[x]` Integración PlateRecognizer + POST `/api/scans/`
         - `[x]` Resultado visual verde (VIGENTE) / rojo (EN INFRACCIÓN)
+    - `[x]` **Testing — flujos sección / duración / acta**
+        - `[x]` Modal iniciar: patente, calle, altura→sección, slider 30–180, medio de pago
+        - `[x]` Dashboard ronda por sección + buscador + acta PDF con foto
+        - `[x]` Documentación `docs/flujos_estacionamiento_testing.md` (solo testing, no gestión)

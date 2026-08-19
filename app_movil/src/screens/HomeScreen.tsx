@@ -22,6 +22,7 @@ import {
 import type { FavoriteVehicle, ParkingSession } from '../api/types';
 import { AppHeader } from '../components/AppHeader';
 import { OsmMap } from '../components/OsmMap';
+import { StartParkingModal } from '../components/StartParkingModal';
 import { DEMO_PATENTE } from '../config';
 import { useAuth } from '../context/AuthContext';
 import type { AppTabParamList } from '../navigation/AppTabs';
@@ -39,18 +40,20 @@ export function HomeScreen() {
   } | null>(null);
   const [saldo, setSaldo] = useState<string | null>(null);
   const [session, setSession] = useState<ParkingSession | null>(null);
+  const [vehicles, setVehicles] = useState<FavoriteVehicle[]>([]);
   const [vehicle, setVehicle] = useState<FavoriteVehicle | null>(null);
   const [lastSession, setLastSession] = useState<ParkingSession | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showStartModal, setShowStartModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
     setError(null);
     try {
-      const [wallet, activeSession, vehicles, sessions] = await Promise.all([
+      const [wallet, activeSession, vehicleList, sessions] = await Promise.all([
         getWallet(userId),
         getActiveSessionForUser(userId),
         getVehicles(userId),
@@ -58,7 +61,8 @@ export function HomeScreen() {
       ]);
       setSaldo(wallet.saldo_actual);
       setSession(activeSession);
-      setVehicle(vehicles[0] ?? null);
+      setVehicles(vehicleList);
+      setVehicle(vehicleList[0] ?? null);
       const mine = sessions
         .filter((s) => s.user_id === userId)
         .sort(
@@ -67,7 +71,9 @@ export function HomeScreen() {
       setLastSession(mine[0] ?? null);
       setStatusMessage(
         activeSession
-          ? `Estacionamiento ACTIVO · ${activeSession.patente}`
+          ? `Estacionamiento ACTIVO · ${activeSession.patente}${
+              activeSession.seccion ? ` · ${activeSession.seccion}` : ''
+            }`
           : 'Listo para estacionar',
       );
     } catch (err) {
@@ -111,24 +117,45 @@ export function HomeScreen() {
 
   const onToggleParking = async () => {
     if (!userId) return;
+    if (!session) {
+      setShowStartModal(true);
+      return;
+    }
     setActionLoading(true);
     setError(null);
     try {
-      const patente = vehicle?.patente ?? DEMO_PATENTE;
-      if (session) {
-        const result = await finalizarEstacionamiento(session.id);
-        setSaldo(String(result.saldo_restante));
-        setSession(null);
-        setStatusMessage(
-          `Finalizado · ${formatARS(result.costo_cobrado)} · ${result.minutos_transcurridos} min`,
-        );
-        await refresh();
-      } else {
-        const result = await iniciarEstacionamiento(userId, patente);
-        setSaldo(String(result.saldo_actual));
-        setStatusMessage(result.mensaje);
-        await refresh();
-      }
+      const result = await finalizarEstacionamiento(session.id);
+      setSaldo(String(result.saldo_restante));
+      setSession(null);
+      setStatusMessage(
+        `Finalizado · ${formatARS(result.costo_cobrado)} · ${result.minutos_transcurridos} min`,
+      );
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la acción');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const onStartConfirm = async (payload: {
+    patente: string;
+    calle: string;
+    altura: number;
+    duracion_minutos: number;
+    medio_pago: string;
+  }) => {
+    if (!userId) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      const result = await iniciarEstacionamiento(userId, payload);
+      setShowStartModal(false);
+      setSaldo(String(result.saldo_actual));
+      setStatusMessage(
+        `${result.mensaje}${result.seccion ? ` · ${result.seccion}` : ''}`,
+      );
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo completar la acción');
     } finally {
@@ -246,6 +273,16 @@ export function HomeScreen() {
           </View>
         </Pressable>
       </ScrollView>
+
+      <StartParkingModal
+        visible={showStartModal}
+        vehicles={vehicles}
+        loading={actionLoading}
+        onCancel={() => setShowStartModal(false)}
+        onConfirm={(payload) => {
+          void onStartConfirm(payload);
+        }}
+      />
     </View>
   );
 }

@@ -12,6 +12,7 @@ import {
   type ReportPeriod,
   type ReportsResponse,
 } from './api'
+import { SectionRondaPanel } from './components/SectionRondaPanel'
 import './App.css'
 
 const POLL_MS = 4000
@@ -206,6 +207,9 @@ export default function App() {
         <div>
           <p className="eyebrow">Municipalidad de Casilda</p>
           <h1>Casilda Conecta · Fiscalización</h1>
+          <p className="field-hint" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>
+            App de inspectores (web / Android Capacitor)
+          </p>
         </div>
         <div className="header-meta">
           <span className={`dot ${error ? 'offline' : 'online'}`} />
@@ -305,6 +309,8 @@ export default function App() {
 
       {error ? <p className="banner-error">{error}</p> : null}
       {loading ? <p className="muted">Cargando panel…</p> : null}
+
+      <SectionRondaPanel />
 
       <section className="grid">
         <div className="panel">

@@ -71,7 +71,7 @@ export function InspectorScreen() {
   const processPlate = async (patente: string, photoUri?: string) => {
     setStatus('processing');
     setResult(null);
-    setMessage(`Leyendo ${patente}… enviando a Django`);
+    setMessage(`Leyendo ${patente}… enviando a Casilda`);
     try {
       const coords = await getCoords();
       const scan = await postScan({

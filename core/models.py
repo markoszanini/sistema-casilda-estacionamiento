@@ -58,9 +58,33 @@ class ParkingSession(models.Model):
     fin = models.DateTimeField(blank=True, null=True)
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='ACTIVO')
     costo_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    # Campos de testing: ubicación por sección y duración prepagada
+    calle = models.CharField(max_length=80, blank=True, null=True)
+    altura = models.PositiveIntegerField(blank=True, null=True)
+    seccion = models.CharField(max_length=120, blank=True, null=True, db_index=True)
+    duracion_minutos = models.PositiveIntegerField(blank=True, null=True)
+    medio_pago = models.CharField(max_length=50, blank=True, null=True, default='Billetera')
+    marca = models.CharField(max_length=50, blank=True, null=True)
+    modelo = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"Sesión: {self.patente} - {self.estado}"
+
+
+class ActaInfraccion(models.Model):
+    """
+    Acta de infracción generada en testing (PDF / foto).
+    No usar en gestión/producción.
+    """
+    patente = models.CharField(max_length=10)
+    seccion = models.CharField(max_length=120, blank=True, null=True)
+    url_foto = models.TextField(blank=True, null=True, help_text="URL o data-URL de la foto")
+    observaciones = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+    generada_por = models.IntegerField(blank=True, null=True, help_text="user_id inspector")
+
+    def __str__(self):
+        return f"Acta {self.id} · {self.patente}"
 
 class LPRScan(models.Model):
     """
